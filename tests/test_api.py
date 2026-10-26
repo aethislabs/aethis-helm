@@ -78,7 +78,8 @@ def test_history_is_converted_with_pretty_printed_args(client, ranker):
 
 @pytest.mark.parametrize("payload, needle", [
     ({"task": "t", "tools": tools(1)}, "at least 2"),
-    ({"task": "t", "tools": tools(16)}, "at most 15"),
+    ({"task": "t", "tools": tools(11)}, "at most 10"),
+    ({"task": "t", "tools": tools(10, with_finish=True)}, "at most 10"),
     ({"task": "t", "tools": tools(2) + tools(1)}, "unique"),
     ({"task": "", "tools": tools(2)}, "at least 1 character"),
     ({"tools": tools(2)}, "Field required"),
@@ -93,8 +94,10 @@ def test_validation_errors_are_422(client, ranker, payload, needle):
     assert ranker.calls == []
 
 
-def test_fifteen_tools_are_accepted(client):
-    assert client.post("/rank", json={"task": "t", "tools": tools(15)}).status_code == 200
+def test_ten_tools_plus_added_finish_is_the_maximum(client, ranker):
+    body = client.post("/rank", json={"task": "t", "tools": tools(10)}).json()
+    assert body["finish_added"] is True and len(body["ranked"]) == 11
+    assert len(ranker.calls[0][2]) == 11
 
 
 def test_long_description_is_accepted_and_left_to_the_prompt_builder(client, ranker):

@@ -22,7 +22,7 @@ def test_defaults_are_the_checkpoint_settings():
                                     max_prompt_tokens=1280)
     assert cfg.verbalize == VerbalizeConfig(full_history_steps=3, observation_chars=200, args_chars=120,
                                             description_chars=200)
-    assert (cfg.min_tools, cfg.max_tools) == (2, 15)
+    assert (cfg.min_tools, cfg.max_tools) == (2, 10)
 
 
 def test_config_is_immutable():

@@ -7,7 +7,7 @@ You send the task, the calls made so far, and the tools on offer. Helm reads all
 ## What it does and doesn't do
 
 - **Ranks tool names only.** It does not fill in arguments. Your agent still has to write the call.
-- **2 to 15 tools per request.** `Finish` (the "stop and answer" action) is added automatically if you leave it out, because the model was always trained with it present. The response tells you when that happened.
+- **2 to 10 tools per request.** `Finish` (the "stop and answer" action) is added automatically if you leave it out, because the model was always trained with it present. The response tells you when that happened. So the model scores at most 11 tools, the most it saw in training. If you send `Finish` yourself, it counts toward the 10.
 - **Descriptions are cut to 200 characters**, as in training. Long tasks and histories are trimmed from the front. If the prompt is so long that a tool's line would be cut, you get a 422 error, not a silent wrong answer.
 - **Trained on ToolBench (RapidAPI-style tools, single-tool tasks).** Expect it to work best on similar tools: short REST-style functions with one-line descriptions. It has not been evaluated on other kinds of toolsets.
 - **Scores are a ranking signal.** `prob` is a softmax over the tools in one request. It is not a calibrated probability.
@@ -20,14 +20,15 @@ uv pip install --python .venv/bin/python -e '.[dev]'
 
 cp .env.example .env          # then fill in the values below
 export HELM_DEVICE=mps        # cuda, mps or cpu (cpu runs in full precision)
-export HELM_WEIGHTS_DIR=/path/to/checkpoint   # contains adapter/ and head.pt
-# or, instead of a local directory:
-# export HELM_HF_REPO=<user>/<weights-repo>
+export HELM_HF_REPO=YashDT/aethis-helm-weights   # private: needs a token with access
+export HF_TOKEN=hf_...                           # or run `hf auth login` once
+# or, if you already have the checkpoint on disk:
+# export HELM_WEIGHTS_DIR=/path/to/checkpoint    # contains adapter/ and head.pt
 
 .venv/bin/helm-serve          # http://127.0.0.1:8000, one worker
 ```
 
-The first start downloads the Qwen2.5-1.5B-Instruct backbone (about 3 GB) into the Hugging Face cache. Every setting is listed in `.env.example`.
+The first start downloads the Qwen2.5-1.5B-Instruct backbone (about 3 GB, public) and the Helm weights into the Hugging Face cache. Every setting is listed in `.env.example`.
 
 ### Request
 
@@ -74,7 +75,7 @@ From a real run on an Apple Silicon laptop (MPS), scores rounded:
 
 `GET /health` returns `{"status": "ok", "model_loaded": true, "device": "mps", "version": "0.1.0"}`.
 
-Errors: 422 for invalid input (fewer than 2 or more than 15 tools, duplicate or multi-line names, empty task, a prompt that would cut a tool's line), 503 while the model is still loading.
+Errors: 422 for invalid input (fewer than 2 or more than 10 tools, duplicate or multi-line names, empty task, a prompt that would cut a tool's line), 503 while the model is still loading.
 
 ## Results from the research
 
@@ -93,10 +94,12 @@ The baseline is about 2.6 points more accurate on the first pick. Helm never nam
 
 The weights are a LoRA adapter (`adapter/`, about 4 MB) and a span scoring head (`head.pt`, about 50 MB) on top of `Qwen/Qwen2.5-1.5B-Instruct`. Helm loads them from `HELM_WEIGHTS_DIR` if set, otherwise from the Hugging Face Hub repo `HELM_HF_REPO` (at `HELM_HF_REVISION`). `head.pt` is loaded with `torch.load(weights_only=True)`, so it cannot run code.
 
+**The weights repo, `YashDT/aethis-helm-weights`, is private.** The code in this repository is public, but the server can only download the weights with a Hugging Face token that has read access to that repo. Set it as `HF_TOKEN` (in `.env` for Docker), or log in once with `hf auth login`. Without access, startup fails with a Hugging Face authorization error. The backbone itself is public and needs no token.
+
 To publish a checkpoint to the Hub:
 
 ```bash
-python scripts/upload_weights.py --src /path/to/checkpoint --repo <user>/<weights-repo> --private
+python scripts/upload_weights.py --src /path/to/checkpoint --repo YashDT/aethis-helm-weights --private
 ```
 
 ## Docker

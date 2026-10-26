@@ -43,7 +43,7 @@ class HelmConfig:
     verbalize: VerbalizeConfig = field(default_factory=VerbalizeConfig)
     weights: WeightsConfig = field(default_factory=WeightsConfig)
     min_tools: int = 2
-    max_tools: int = 15
+    max_tools: int = 10  # tools a caller sends; Finish may be added on top, for at most 11 as in training
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "HelmConfig":
