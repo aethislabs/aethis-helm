@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aethis-helm"
+version = "0.1.0"
+description = "Rank an AI agent's available tools for its next step with a single prefill pass."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch==2.14.0",
+    "transformers==5.17.0",
+    "tokenizers==0.23.2",
+    "peft==0.20.0",
+    "accelerate==1.15.0",
+    "huggingface-hub==1.30.0",
+    "safetensors==0.8.0",
+    "numpy==2.5.3",
+    "fastapi==0.162.0",
+    "pydantic==2.14.1",
+    "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "pytest-cov==7.1.0", "httpx==0.28.1"]
+
+[project.scripts]
+helm-serve = "aethis_helm.serve:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aethis_helm"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: loads the real backbone and weights (run with -m slow)"]
+addopts = "-m 'not slow'"
