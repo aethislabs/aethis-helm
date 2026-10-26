@@ -90,6 +90,19 @@ These come from the ActionRank research project: ToolBench G1, Qwen2.5-1.5B, 3 t
 
 The baseline is about 2.6 points more accurate on the first pick. Helm never names a tool that isn't offered, ranks the alternatives much better, and is faster. That is the trade. All numbers are for ToolBench-style tools and this backbone; they are not a claim about other toolsets or larger models.
 
+### Measured with this code
+
+- **Same predictions as the research.** On the 1,340 held-out steps that have no duplicate tool names, Helm's top pick matches the research checkpoint's on every step: 64.5% correct first pick and 97.7% in the top 5. (The other 12 of the 1,352 steps list a tool name twice, which Helm rejects.)
+- **Latency, from `scripts/bench.py`** (server-side median, one request at a time, Apple M3 Pro):
+
+| | 2 tools | 6 tools | 10 tools |
+|---|---:|---:|---:|
+| MPS (native, float16), sample request | | about 185 ms | |
+| CPU in Docker (float32, 12 vCPUs, short history) | 1.5 s | 1.8 s | 2.0 s |
+| CPU in Docker (float32, 12 vCPUs, 8-call history) | 2.8 s | 3.0 s | 3.0 s |
+
+CPU works but is about 10 times slower than a GPU-class device. It also needs about 6.5 GB of RAM for the model in full precision, so give Docker at least 8 GB. Use CPU for trying Helm out, and `cuda` or `mps` for anything interactive.
+
 ## Weights
 
 The weights are a LoRA adapter (`adapter/`, about 4 MB) and a span scoring head (`head.pt`, about 50 MB) on top of `Qwen/Qwen2.5-1.5B-Instruct`. Helm loads them from `HELM_WEIGHTS_DIR` if set, otherwise from the Hugging Face Hub repo `HELM_HF_REPO` (at `HELM_HF_REVISION`). `head.pt` is loaded with `torch.load(weights_only=True)`, so it cannot run code.
@@ -124,3 +137,7 @@ HELM_DEVICE=mps HELM_WEIGHTS_DIR=... .venv/bin/pytest -m slow    # loads the rea
 Layout: `src/aethis_helm/` holds `types.py` (value types), `config.py` (settings; defaults are the checkpoint's), `verbalize.py` (prompt builder, matches the training format byte for byte), `model.py` (backbone, span pooling, scoring head), `weights.py` (local or Hub weights), `ranker.py` (load and rank) and `serve.py` (FastAPI app).
 
 The server runs one worker and serializes model calls with a lock, so it handles one decision at a time. It has no authentication or rate limiting; put it behind something that does before exposing it.
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE). The backbone (Qwen2.5-1.5B-Instruct) and the training data (ToolBench) are also Apache-2.0; see [NOTICE](NOTICE) for attribution.

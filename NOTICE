@@ -1,0 +1,12 @@
+Aethis Helm
+Copyright 2026 Yash Thapliyal
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It builds on the following third-party work, also licensed under the Apache License, Version 2.0:
+
+- Qwen2.5-1.5B-Instruct (Qwen Team, Alibaba Cloud), the backbone model, downloaded at runtime from
+  https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct. Not redistributed in this repository.
+- ToolBench (OpenBMB; Qin et al., "ToolLLM: Facilitating Large Language Models to Master 16000+
+  Real-world APIs", arXiv:2307.16789), the data the released weights were trained on. The Finish tool
+  description in src/aethis_helm/types.py is quoted verbatim from ToolBench.
